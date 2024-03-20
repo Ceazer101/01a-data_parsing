@@ -22,20 +22,36 @@ function parseJSON(filename) {
 }
 
 // Function to read and parse XML files and print to console
-function parseXML(filename) {
-    const parser = new xml2js.Parser();
-    fs.readFile(filename, (err, data) => {
+function parseXML(filename, callback) {
+    fs.readFile(filename, 'utf8', (err, data) => {
         if (err) {
-            console.error("Error reading XML file:", err);
-        } else {
-            parser.parseString(data, (err, result) => {
-                if (err) {
-                    console.error("Error parsing XML:", err);
-                } else {
-                    console.log(result);
-                }
-            });
+            callback(err, null);
+            return;
         }
+
+        xml2js.parseString(data, (parseErr, result) => {
+            if (parseErr) {
+                callback(parseErr, null);
+                return;
+            }
+
+            // Extracting person data
+            const people = result.people;
+            const persons = people.person;
+
+            // Constructing XML string
+            let xmlString = '<people>\n';
+            persons.forEach(person => {
+                xmlString += '  <person>\n';
+                xmlString += `    <name>${person.name}</name>\n`;
+                xmlString += `    <age>${person.age}</age>\n`;
+                xmlString += `    <gender>${person.gender}</gender>\n`;
+                xmlString += '  </person>\n';
+            });
+            xmlString += '</people>';
+
+            callback(null, xmlString);
+        });
     });
 }
 
@@ -62,7 +78,15 @@ console.log("\nYAML:");
 console.log(parseYAML("../dataFiles/set1/users.yaml"));
 console.log("\nJSON:");
 console.log(parseJSON("../dataFiles/set1/users.json"));
-console.log("\nXML:");
-console.log(parseXML("../dataFiles/set1/users.xml"));
+
 console.log("\nCSV:");
 console.log(parseCSV("../dataFiles/set1/users.csv"));
+
+console.log("XML:");
+parseXML("../dataFiles/set1/users.xml", (err, data) => {
+    if (err) {
+        console.error("Error parsing XML:", err);
+    } else {
+        console.log(data);
+    }
+});
